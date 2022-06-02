@@ -52,25 +52,27 @@ static struct {
 	json_ret_code_t ret_code;
 	uint16_t line;
 	uint16_t column;
+	uint16_t line_start;
 } m_json_lex;
 
-// Return how many characters match, 0 if no match or different length
-static inline int strncmpc(const char* s1, const char *s2, size_t n) {
-	int i = 0;
-	while (i < n && s1[i] == s2[i]) {
-		i++;
+static inline json_ret_code_t json_strcmp_partial(const char* expect_str, const char* actual_str,
+												  uint16_t expect_str_len, uint16_t actual_str_len) {
+	if (expect_str_len < actual_str_len || actual_str_len == 0) {
+		return JSON_RETVAL_FAIL;
 	}
-	printf("i: %d\n", i);
-	return (s1[i] && s2[i]) ? i : 0;
+	if (expect_str_len == actual_str_len) {
+		return strcmp(expect_str, actual_str) == 0 ? JSON_RETVAL_OK : JSON_RETVAL_FAIL;
+	}
+	return strncmp(expect_str, actual_str, actual_str_len) == 0 ? JSON_RETVAL_INCOMPLETE : JSON_RETVAL_FAIL;
 }
 
 #define JSON_RETURN_COND_FALSE(c)		if (!(c)) { JSON_RETURN_BOOL(false); }
 
-#define JSON_MATCH_CHAR(c)				(m_json_lex.buffer[0] == (c))
-#define JSON_MATCH_STRING(s)			(strncmp(m_json_lex.buffer, (s), MAX(m_json_lex.buffer_len + 1, strlen(s))) == 0)
-#define JSON_MATCH_STRINGC(s)			(strncmpc(m_json_lex.buffer, (s), MAX(m_json_lex.buffer_len + 1, strlen(s))) > 0)
-#define JSON_RETURN_MATCH_STRING(s)		JSON_RETURN_BOOL(JSON_MATCH_STRING(s))
-#define JSON_RETURN_MATCH_STRINGC(s)	JSON_RETURN_BOOL(JSON_MATCH_STRINGC(s))
+#define JSON_MATCH_CHAR(c)					(m_json_lex.buffer[0] == (c))
+#define JSON_MATCH_STRING(s)				(strncmp(m_json_lex.buffer, (s), MAX(m_json_lex.buffer_len + 1, strlen(s))) == 0)
+#define JSON_MATCH_STRING_PARTIAL(s)		(json_strcmp_partial((s), m_json_lex.buffer, strlen(s), m_json_lex.buffer_len + 1))
+#define JSON_RETURN_MATCH_STRING(s)			JSON_RETURN_BOOL(JSON_MATCH_STRING(s))
+#define JSON_RETURN_MATCH_STRING_PARTIAL(s)	return JSON_MATCH_STRING_PARTIAL(s)
 
 JSON_IS_TOKEN_TYPE_FN_IMPL(JSON_TOKEN_TYPE_START_OBJECT) { JSON_RETURN_MATCH_STRING(JSON_TOKEN_STR_REPR_START_OBJECT); }
 JSON_IS_TOKEN_TYPE_FN_IMPL(JSON_TOKEN_TYPE_END_OBJECT) { JSON_RETURN_MATCH_STRING(JSON_TOKEN_STR_REPR_END_OBJECT); }
@@ -78,17 +80,17 @@ JSON_IS_TOKEN_TYPE_FN_IMPL(JSON_TOKEN_TYPE_MEMBER_DELIM) { JSON_RETURN_MATCH_STR
 JSON_IS_TOKEN_TYPE_FN_IMPL(JSON_TOKEN_TYPE_NAME_VAL_DELIM) { JSON_RETURN_MATCH_STRING(JSON_TOKEN_STR_REPR_NAME_VAL_DELIM); }
 JSON_IS_TOKEN_TYPE_FN_IMPL(JSON_TOKEN_TYPE_VAL_START_ARRAY) { JSON_RETURN_MATCH_STRING(JSON_TOKEN_STR_REPR_VAL_START_ARRAY); }
 JSON_IS_TOKEN_TYPE_FN_IMPL(JSON_TOKEN_TYPE_VAL_END_ARRAY) { JSON_RETURN_MATCH_STRING(JSON_TOKEN_STR_REPR_VAL_END_ARRAY); }
-JSON_IS_TOKEN_TYPE_FN_IMPL(JSON_TOKEN_TYPE_VAL_NULL) { JSON_RETURN_MATCH_STRINGC(JSON_TOKEN_STR_REPR_VAL_NULL); }
+JSON_IS_TOKEN_TYPE_FN_IMPL(JSON_TOKEN_TYPE_VAL_NULL) { JSON_RETURN_MATCH_STRING_PARTIAL(JSON_TOKEN_STR_REPR_VAL_NULL); }
 
 JSON_IS_TOKEN_TYPE_FN_IMPL(JSON_TOKEN_TYPE_VAL_BOOLEAN) {
-	if (JSON_MATCH_STRINGC(JSON_TOKEN_STR_REPR_VAL_BOOLEAN_TRUE)) {
-		printf("match true\n");
+	json_ret_code_t ret;
+	if ((ret = JSON_MATCH_STRING_PARTIAL(JSON_TOKEN_STR_REPR_VAL_BOOLEAN_TRUE)) <= JSON_RETVAL_INCOMPLETE) {
 		m_json_lex.token.value.boolean = true;
-		JSON_RETURN_BOOL(true);
+		return ret;
 	}
-	if (JSON_MATCH_STRINGC(JSON_TOKEN_STR_REPR_VAL_BOOLEAN_FALSE)) {
+	if ((ret = JSON_MATCH_STRING_PARTIAL(JSON_TOKEN_STR_REPR_VAL_BOOLEAN_FALSE)) <= JSON_RETVAL_INCOMPLETE) {
 		m_json_lex.token.value.boolean = false;
-		JSON_RETURN_BOOL(true);
+		return ret;
 	}
 	JSON_RETURN_BOOL(false);
 }
@@ -194,22 +196,42 @@ void json_lex_init() {
 	m_json_lex.ret_code = JSON_RETVAL_FAIL;
 }
 
+static void json_lex_error_handler(const char* p_input, uint32_t input_len, json_ret_code_t ret) {
+	if (ret == JSON_RETVAL_ILLEGAL) {
+		printf("\033[1;31mSyntaxError\033[0m: Unexpected token \"%.*s\" at position %u:%u\n", m_json_lex.buffer_len + 1, m_json_lex.buffer, m_json_lex.line + 1, m_json_lex.column + 1);
+		printf("%5u |     ", m_json_lex.line + 1);
+		for (uint16_t i = m_json_lex.line_start; i < input_len && p_input[i] != '\n' && p_input[i] != '\r'; i++) {
+			printf("%c", p_input[i]);
+		}
+		printf("\n");
+		printf("      |     ");
+		for (uint16_t i = 0; i < m_json_lex.column; i++) {
+			printf(" ");
+		}
+		printf("\033[1;31m^\033[0m\n");
+	}
+}
+
 json_ret_code_t json_lex(const char* p_input, uint32_t input_len, json_token_t* p_tokens, uint32_t *p_num_tokens, uint32_t max_num_tokens) {
 	uint32_t consumed_total = 0;
+	m_json_lex.line_start = 0;
 
 	while (*p_num_tokens <= max_num_tokens) {
 		json_token_t token = {0};
 		uint32_t consumed = 0;
+		uint16_t line_num_before = m_json_lex.line;
 		json_ret_code_t ret = get_next_token(&p_input[consumed_total], input_len - consumed_total, &consumed, &token);
-		if (ret != JSON_RETVAL_OK) {
-			if (ret == JSON_RETVAL_ILLEGAL) {
-				printf("Error: Unknown token \"%.*s\" at position %u:%u\n", consumed, &p_input[consumed_total], m_json_lex.line + 1, m_json_lex.column + 1);
-				return JSON_RETVAL_ILLEGAL;
-			}
-			break;
+		if (ret != JSON_RETVAL_OK && ret != JSON_RETVAL_BUSY) {
+			json_lex_error_handler(p_input, input_len, ret);
+			return ret;
 		}
-		p_tokens[(*p_num_tokens)++] = token;
+		if (ret == JSON_RETVAL_OK) {
+			p_tokens[(*p_num_tokens)++] = token;
+		}
 		consumed_total += consumed;
+		if (m_json_lex.line != line_num_before) {
+			m_json_lex.line_start = consumed_total;
+		}
 	}
 
 	return JSON_RETVAL_OK;
@@ -245,7 +267,6 @@ static json_ret_code_t get_next_token(const char* p_input, uint32_t input_len, u
 				num_matches++;
 			}
 		}
-		printf("buf |%.*s|, matches %d, ret %d\n", m_json_lex.buffer_len+1, m_json_lex.buffer, num_matches, m_json_lex.ret_code);
 
 		if (num_matches == 0) {
 			m_json_lex.column += m_json_lex.buffer_len;
@@ -273,6 +294,7 @@ static json_ret_code_t get_next_token(const char* p_input, uint32_t input_len, u
 			if (return_token) {
 				return JSON_RETVAL_OK;
 			}
+			return JSON_RETVAL_BUSY;
 		} else {
 			m_json_lex.buffer_len++;
 		}
@@ -315,7 +337,7 @@ void json_get_token_str_repr(json_token_t* p_token, char* str, uint32_t str_len)
 		case JSON_TOKEN_TYPE_UNDEFINED:
 		case JSON_TOKEN_TYPE_WHITESPACE:
 		case JSON_TOKEN_TYPE_COUNT:
-			printf("Invalid token type\n");
+			snprintf(str, str_len, ": <UNKNOWN>");
 			break;
 	}
 }

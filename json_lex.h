@@ -26,8 +26,9 @@ typedef enum {
 
 typedef enum {
 	JSON_RETVAL_OK,
-	JSON_RETVAL_FAIL,
 	JSON_RETVAL_INCOMPLETE,
+	JSON_RETVAL_BUSY,
+	JSON_RETVAL_FAIL,
 	JSON_RETVAL_ILLEGAL,
 } json_ret_code_t;
 
