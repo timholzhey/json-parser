@@ -2,6 +2,7 @@
 // Created by tholz on 28.11.2021.
 //
 
+#define LOG_LEVEL LOG_LEVEL_DEBUG
 #include "testlib.h"
 
 static test_registry_t m_tests = {0};

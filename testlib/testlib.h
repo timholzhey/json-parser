@@ -5,6 +5,18 @@
 #ifndef TESTLIB_TEST_H
 #define TESTLIB_TEST_H
 
+#define LOG_LEVEL_OFF		0
+#define LOG_LEVEL_ERROR		1
+#define LOG_LEVEL_WARNING	2
+#define LOG_LEVEL_INFO		3
+#define LOG_LEVEL_SUCCESS	4
+#define LOG_LEVEL_HIGHLIGHT	5
+#define LOG_LEVEL_DEBUG		6
+
+#ifndef LOG_LEVEL
+#define LOG_LEVEL LOG_LEVEL_INFO
+#endif
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -26,6 +38,13 @@
         test_failed();          \
     }
 
+#define TEST_FAIL_WITH_MSG(msg, ...) \
+	log_raw_error("\tAssertion failed: "); \
+	log_raw_error(msg, ##__VA_ARGS__); \
+	log_raw_error(" at %s:%d\n", __FILE__, __LINE__); \
+	test_failed(); \
+	return 1;
+
 #define TEST_ASSERT_TRUE(assertion) TEST_ASSERT(assertion)
 #define TEST_EXPECT_TRUE(assertion) TEST_EXPECT(assertion)
 
@@ -34,6 +53,13 @@
 
 #define TEST_ASSERT_EQ(a, b) TEST_ASSERT((a) == (b))
 #define TEST_EXPECT_EQ(a, b) TEST_EXPECT((a) == (b))
+
+#define TEST_ASSERT_EQ_STRING(expect, actual, len) \
+	for (int _i = 0; _i < len; _i++) { \
+		if ((expect)[_i] != (actual)[_i]) { \
+			TEST_FAIL_WITH_MSG("Expected \"%s\", got \"%s\" (%u/%u)", expect, actual, _i, (uint16_t) len); \
+		} \
+	} \
 
 #define TEST_DEF(test_group_name, test_name) \
     int test_group_name##_##test_name()
@@ -91,15 +117,53 @@
 	return return_value;
 
 #define log_error(message, ...) \
-    printf("\033[0;31m" message "\033[0m\n", ##__VA_ARGS__)
+    if (LOG_LEVEL >= LOG_LEVEL_SUCCESS) { \
+		printf("\033[0;31m" message "\033[0m\n", ##__VA_ARGS__); \
+	}
 #define log_success(message, ...) \
-    printf("\033[0;32m" message "\033[0m\n", ##__VA_ARGS__)
+    if (LOG_LEVEL >= LOG_LEVEL_SUCCESS) { \
+		printf("\033[0;32m" message "\033[0m\n", ##__VA_ARGS__); \
+	}
 #define log_warning(message, ...) \
-    printf("\033[0;33m" message "\033[0m\n", ##__VA_ARGS__)
+	if (LOG_LEVEL >= LOG_LEVEL_WARNING) { \
+		printf("\033[0;33m" message "\033[0m\n", ##__VA_ARGS__); \
+	}
 #define log_highlight(message, ...) \
-    printf("\033[0;34m" message "\033[0m\n", ##__VA_ARGS__)
+    if (LOG_LEVEL >= LOG_LEVEL_HIGHLIGHT) { \
+		printf("\033[0;34m" message "\033[0m\n", ##__VA_ARGS__); \
+	}
 #define log_info(message, ...) \
-    printf("\033[0;37m" message "\033[0m\n", ##__VA_ARGS__)
+    if (LOG_LEVEL >= LOG_LEVEL_INFO) { \
+		printf("\033[0;37m" message "\033[0m\n", ##__VA_ARGS__); \
+	}
+#define log_debug(message, ...) \
+	if (LOG_LEVEL >= LOG_LEVEL_DEBUG) { \
+		printf("\033[0;37m" message "\033[0m\n", ##__VA_ARGS__); \
+	}
+#define log_raw_error(message, ...) \
+    if (LOG_LEVEL >= LOG_LEVEL_SUCCESS) { \
+		printf("\033[0;31m" message "\033[0m", ##__VA_ARGS__); \
+	}
+#define log_raw_success(message, ...) \
+    if (LOG_LEVEL >= LOG_LEVEL_SUCCESS) { \
+		printf("\033[0;32m" message "\033[0m", ##__VA_ARGS__); \
+	}
+#define log_raw_warning(message, ...) \
+	if (LOG_LEVEL >= LOG_LEVEL_WARNING) { \
+		printf("\033[0;33m" message "\033[0m", ##__VA_ARGS__); \
+	}
+#define log_raw_highlight(message, ...) \
+    if (LOG_LEVEL >= LOG_LEVEL_HIGHLIGHT) { \
+		printf("\033[0;34m" message "\033[0m", ##__VA_ARGS__); \
+	}
+#define log_raw_info(message, ...) \
+    if (LOG_LEVEL >= LOG_LEVEL_INFO) { \
+		printf("\033[0;37m" message "\033[0m", ##__VA_ARGS__); \
+	}
+#define log_raw_debug(message, ...) \
+	if (LOG_LEVEL >= LOG_LEVEL_DEBUG) { \
+		printf("\033[0;37m" message "\033[0m", ##__VA_ARGS__); \
+	}
 
 typedef struct {
     const char* test_group_name;

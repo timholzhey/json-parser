@@ -4,6 +4,7 @@ project(json_parser C)
 set(CMAKE_C_STANDARD 99)
 
 include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/testlib/
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/
 )

@@ -30,6 +30,7 @@ typedef enum {
 	JSON_RETVAL_BUSY,
 	JSON_RETVAL_FAIL,
 	JSON_RETVAL_ILLEGAL,
+	JSON_RETVAL_FINISHED,
 } json_ret_code_t;
 
 typedef json_ret_code_t (*json_is_token_type_fn)();
@@ -48,7 +49,7 @@ typedef struct {
 typedef union {
 	json_value_string_t string;
 	bool boolean;
-	float number;
+	double number;
 } json_value_t;
 
 typedef struct {
@@ -100,6 +101,12 @@ JSON_IS_TOKEN_TYPE_FN_DECL(JSON_TOKEN_TYPE_WHITESPACE)
 	   __typeof__ (b) _b = (b); \
 	 _a > _b ? _a : _b; })
 #endif
+
+
+json_ret_code_t json_strcmp_partial(const char* expect_str, const char* actual_str,
+										   uint16_t expect_str_len, uint16_t actual_str_len);
+json_ret_code_t json_str_unescape(char* str_dest, const char* str_src, uint16_t str_len);
+json_ret_code_t json_parse_number(double *p_dest, const char* str_src, uint16_t str_len);
 
 void json_lex_init();
 
