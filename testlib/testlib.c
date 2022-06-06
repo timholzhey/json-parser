@@ -3,6 +3,8 @@
 //
 
 #define LOG_LEVEL LOG_LEVEL_DEBUG
+
+#include <string.h>
 #include "testlib.h"
 
 static test_registry_t m_tests = {0};
@@ -19,20 +21,25 @@ void register_test(const char* test_group_name, const char* test_name, void* tes
 	m_tests.tests[m_tests.test_count++] = test;
 }
 
+void register_test_group(const char* test_group_name) {
+	memset(&m_tests, 0, sizeof(m_tests));
+}
+
 int run_tests() {
 	if (m_tests.test_count == 0) {
-		log_error("No tests registered\n");
+		log_error("No tests registered");
 		return 1;
 	}
+	log_info("Running test group %s", m_tests.tests[0].test_group_name);
     for (int i = 0; i < m_tests.test_count; i++) {
         g_current_test = m_tests.tests[i];
-        log_info("Running test: %s.%s\n", m_tests.tests[i].test_group_name, m_tests.tests[i].test_name);
+        log_info("> Running test: %s.%s", m_tests.tests[i].test_group_name, m_tests.tests[i].test_name);
         int ret = m_tests.tests[i].test_function();
         if (ret == 0 && g_current_test.test_passed) {
-            log_success("\tTest %s.%s passed\n", m_tests.tests[i].test_group_name, m_tests.tests[i].test_name);
+            log_success("\tTest %s.%s passed", m_tests.tests[i].test_group_name, m_tests.tests[i].test_name);
             m_tests.test_passed++;
         } else {
-            log_error("\tTest %s.%s failed\n", m_tests.tests[i].test_group_name, m_tests.tests[i].test_name);
+            log_error("\tTest %s.%s failed", m_tests.tests[i].test_group_name, m_tests.tests[i].test_name);
             m_tests.test_failed++;
         }
     }

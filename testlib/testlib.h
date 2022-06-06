@@ -45,27 +45,147 @@
 	test_failed(); \
 	return 1;
 
-#define TEST_ASSERT_TRUE(assertion) TEST_ASSERT(assertion)
-#define TEST_EXPECT_TRUE(assertion) TEST_EXPECT(assertion)
+#define TEST_ERROR_WITH_MSG(msg, ...) \
+	log_raw_error("\tAssertion failed: "); \
+	log_raw_error(msg, ##__VA_ARGS__); \
+	log_raw_error(" at %s:%d\n", __FILE__, __LINE__); \
+	test_failed();
 
-#define TEST_ASSERT_FALSE(assertion) TEST_ASSERT(!(assertion))
-#define TEST_EXPECT_FALSE(assertion) TEST_EXPECT(!(assertion))
+
+#define TEST_ASSERT_TRUE(assertion) \
+	if (!(assertion)) { \
+        TEST_FAIL_WITH_MSG("Expected true, got false"); \
+    }
+#define TEST_EXPECT_TRUE(assertion) \
+	if (!(assertion)) { \
+		TEST_ERROR_WITH_MSG("Expected true, got false"); \
+	}
+
+#define TEST_ASSERT_FALSE(assertion) \
+	if (assertion) { \
+		TEST_FAIL_WITH_MSG("Expected false, got true"); \
+	}
+#define TEST_EXPECT_FALSE(assertion) \
+	if (assertion) { \
+		TEST_ERROR_WITH_MSG("Expected false, got true"); \
+	}
 
 #define TEST_ASSERT_EQ(a, b) TEST_ASSERT((a) == (b))
 #define TEST_EXPECT_EQ(a, b) TEST_EXPECT((a) == (b))
+
+#define TEST_ASSERT_EQ_U8(a, b) \
+	if ((a) != (b)) { \
+		TEST_FAIL_WITH_MSG("Expected %u, got %u", (uint8_t)(b), (uint8_t)(a)); \
+	}
+#define TEST_EXPECT_EQ_U8(a, b) \
+	if ((a) != (b)) { \
+		TEST_ERROR_WITH_MSG("Expected %u, got %u", (uint8_t)(b), (uint8_t)(a)); \
+	}
+#define TEST_ASSERT_EQ_U16(a, b) \
+	if ((a) != (b)) { \
+		TEST_FAIL_WITH_MSG("Expected %u, got %u", (uint16_t)(b), (uint16_t)(a)); \
+	}
+#define TEST_EXPECT_EQ_U16(a, b) \
+	if ((a) != (b)) { \
+		TEST_ERROR_WITH_MSG("Expected %u, got %u", (uint16_t)(b), (uint16_t)(a)); \
+	}
+#define TEST_ASSERT_EQ_U32(a, b) \
+	if ((a) != (b)) { \
+		TEST_FAIL_WITH_MSG("Expected %u, got %u", (uint32_t)(b), (uint32_t)(a)); \
+	}
+#define TEST_EXPECT_EQ_U32(a, b) \
+	if ((a) != (b)) { \
+		TEST_ERROR_WITH_MSG("Expected %u, got %u", (uint32_t)(b), (uint32_t)(a)); \
+	}
+#define TEST_ASSERT_EQ_U64(a, b) \
+	if ((a) != (b)) { \
+		TEST_FAIL_WITH_MSG("Expected %lu, got %lu", (uint64_t)(b), (uint64_t)(a)); \
+	}
+#define TEST_EXPECT_EQ_U64(a, b) \
+	if ((a) != (b)) { \
+		TEST_ERROR_WITH_MSG("Expected %lu, got %lu", (uint64_t)(b), (uint64_t)(a)); \
+	}
+
+#define TEST_ASSERT_EQ_I8(a, b) \
+	if ((a) != (b)) { \
+		TEST_FAIL_WITH_MSG("Expected %d, got %d", (int8_t)(b), (int8_t)(a)); \
+	}
+#define TEST_EXPECT_EQ_I8(a, b) \
+	if ((a) != (b)) { \
+		TEST_ERROR_WITH_MSG("Expected %d, got %d", (int8_t)(b), (int8_t)(a)); \
+	}
+#define TEST_ASSERT_EQ_I16(a, b) \
+	if ((a) != (b)) { \
+		TEST_FAIL_WITH_MSG("Expected %d, got %d", (int16_t)(b), (int16_t)(a)); \
+	}
+#define TEST_EXPECT_EQ_I16(a, b) \
+	if ((a) != (b)) { \
+		TEST_ERROR_WITH_MSG("Expected %d, got %d", (int16_t)(b), (int16_t)(a)); \
+	}
+#define TEST_ASSERT_EQ_I32(a, b) \
+	if ((a) != (b)) { \
+		TEST_FAIL_WITH_MSG("Expected %d, got %d", (int32_t)(b), (int32_t)(a)); \
+	}
+#define TEST_EXPECT_EQ_I32(a, b) \
+	if ((a) != (b)) { \
+		TEST_ERROR_WITH_MSG("Expected %d, got %d", (int32_t)(b), (int32_t)(a)); \
+	}
+#define TEST_ASSERT_EQ_I64(a, b) \
+	if ((a) != (b)) { \
+		TEST_FAIL_WITH_MSG("Expected %ld, got %ld", (int64_t)(b), (int64_t)(a)); \
+	}
+#define TEST_EXPECT_EQ_I64(a, b) \
+	if ((a) != (b)) { \
+		TEST_ERROR_WITH_MSG("Expected %ld, got %ld", (int64_t)(b), (int64_t)(a)); \
+	}
+
+#define TEST_ASSERT_EQ_FLOAT(a, b) \
+	if ((a) != (b)) { \
+		TEST_FAIL_WITH_MSG("Expected %f, got %f", (float)(b), (float)(a)); \
+	}
+#define TEST_EXPECT_EQ_FLOAT(a, b) \
+	if ((a) != (b)) { \
+		TEST_ERROR_WITH_MSG("Expected %f, got %f", (float)(b), (float)(a)); \
+	}
+#define TEST_ASSERT_EQ_DOUBLE(a, b) \
+	if ((a) != (b)) { \
+		TEST_FAIL_WITH_MSG("Expected %f, got %f", (double)(b), (double)(a)); \
+	}
+#define TEST_EXPECT_EQ_DOUBLE(a, b) \
+	if ((a) != (b)) { \
+		TEST_ERROR_WITH_MSG("Expected %f, got %f", (double)(b), (double)(a)); \
+	}
+
+#define TEST_ASSERT_NOT_NULL(ptr) \
+	if (!(ptr)) { \
+		TEST_FAIL_WITH_MSG("Expected non-NULL pointer, got NULL"); \
+	}
+#define TEST_EXPECT_NOT_NULL(ptr) \
+	if (!(ptr)) { \
+		TEST_ERROR_WITH_MSG("Expected non-NULL pointer, got NULL"); \
+	}
 
 #define TEST_ASSERT_EQ_STRING(expect, actual, len) \
 	for (int _i = 0; _i < len; _i++) { \
 		if ((expect)[_i] != (actual)[_i]) { \
 			TEST_FAIL_WITH_MSG("Expected \"%s\", got \"%s\" (%u/%u)", expect, actual, _i, (uint16_t) len); \
 		} \
-	} \
+	}
+#define TEST_EXPECT_EQ_STRING(expect, actual, len) \
+	for (int _i = 0; _i < len; _i++) { \
+		if ((expect)[_i] != (actual)[_i]) { \
+			TEST_ERROR_WITH_MSG("Expected \"%s\", got \"%s\" (%u/%u)", expect, actual, _i, (uint16_t) len); \
+		} \
+	}
 
 #define TEST_DEF(test_group_name, test_name) \
     int test_group_name##_##test_name()
 
 #define TEST_REG(test_group_name, test_name) \
     register_test(#test_group_name, #test_name, test_group_name##_##test_name)
+
+#define TEST_GROUP_REG(test_group_name) \
+	register_test_group(#test_group_name);
 
 #define TESTS_RUN() \
     return run_tests()
@@ -184,6 +304,7 @@ typedef struct {
 extern test_t g_current_test;
 
 void register_test(const char* test_group_name, const char* test_name, void* test_function);
+void register_test_group(const char* test_group_name);
 int run_tests();
 void test_failed();
 
