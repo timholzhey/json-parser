@@ -25,5 +25,6 @@
   "testNumInt": 1,
   "testNumFloat": 1.1,
   "testNumExponent": 1e1,
-  "testNumNegativeInt": -1
+  "testNumNegativeInt": -1,
+  "testNumArray": [1, 2, 3]
 }

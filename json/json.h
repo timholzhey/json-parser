@@ -16,6 +16,7 @@ typedef enum {
 	JSON_RETVAL_FAIL,
 	JSON_RETVAL_ILLEGAL,
 	JSON_RETVAL_FINISHED,
+	JSON_RETVAL_INVALID_PARAM,
 } json_ret_code_t;
 
 typedef enum {
@@ -28,28 +29,44 @@ typedef enum {
 	JSON_VALUE_TYPE_OBJECT,
 } json_value_type_t;
 
-union json_value_t;
-struct json_object_t;
+typedef union json_value_t json_value_t;
+typedef struct json_object_t json_object_t;
+typedef struct json_array_t json_array_t;
 
-typedef struct {
-	union json_value_t* values;
-	size_t length;
-} json_array_t;
-
-typedef union {
+union json_value_t {
 	char* string;
 	double number;
 	bool boolean;
 	json_array_t* array;
 	struct json_object_t* object;
-} json_value_t;
+};
+
+typedef struct {
+	json_value_t value;
+	json_value_type_t type;
+} json_array_member_t;
+
+struct json_array_t {
+	json_array_member_t* values[10000];
+	size_t length;
+};
 
 typedef struct {
 	char* key;
 	json_value_t value;
 	json_value_type_t type;
-} json_object_t;
+} json_object_member_t;
+
+struct json_object_t {
+	json_object_member_t* members[10000];
+	uint32_t num_members;
+	struct json_object_t* parent;
+};
 
 json_ret_code_t json_parse(const char* p_data, size_t size, json_object_t* p_object);
+
+json_value_t* json_object_get_value(const json_object_t* p_object, const char* key);
+bool json_object_has_key(const json_object_t* p_object, const char* key);
+json_value_t* json_value_get_array_member(json_value_t* p_value, uint32_t index);
 
 #endif //JSON_PARSER_JSON_H
