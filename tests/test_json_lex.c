@@ -23,14 +23,14 @@ TEST_DEF(test_json_lex, lex_complete) {
 		return 1;
 	}
 
-	log_raw_debug("Tokens: ");
+	log_raw_trace("Tokens: ");
 	for (uint32_t i = 0; i < num_tokens; i++) {
 		const int str_len = 255;
 		char str[str_len];
 		json_get_token_str_repr(&tokens[i], str, str_len);
-		log_debug("[%s] ", str);
+		log_trace("[%s] ", str);
 	}
-	log_raw_debug("\n");
+	log_raw_trace("\n");
 
 	// Free tokens
 	free(tokens);

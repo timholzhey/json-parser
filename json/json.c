@@ -45,6 +45,20 @@ json_value_t* json_object_get_value(const json_object_t* p_object, const char* k
 	return NULL;
 }
 
+json_value_type_t json_object_get_value_type(const json_object_t* p_object, const char* key) {
+	if (p_object == NULL) {
+		return JSON_VALUE_TYPE_UNDEFINED;
+	}
+
+	for (uint32_t i = 0; i < p_object->num_members; i++) {
+		if (strcmp(p_object->members[i]->key, key) == 0) {
+			return p_object->members[i]->type;
+		}
+	}
+
+	return JSON_VALUE_TYPE_UNDEFINED;
+}
+
 json_value_t* json_value_get_array_member(json_value_t* p_value, uint32_t index) {
 	if (p_value == NULL) {
 		return NULL;

@@ -12,6 +12,7 @@
 #define LOG_LEVEL_SUCCESS	4
 #define LOG_LEVEL_HIGHLIGHT	5
 #define LOG_LEVEL_DEBUG		6
+#define LOG_LEVEL_TRACE		7
 
 #ifndef LOG_LEVEL
 #define LOG_LEVEL LOG_LEVEL_INFO
@@ -260,6 +261,10 @@
 	if (LOG_LEVEL >= LOG_LEVEL_DEBUG) { \
 		printf("\033[0;37m" message "\033[0m\n", ##__VA_ARGS__); \
 	}
+#define log_trace(message, ...) \
+	if (LOG_LEVEL >= LOG_LEVEL_TRACE) { \
+		printf("\033[0;37m" message "\033[0m\n", ##__VA_ARGS__); \
+	}
 #define log_raw_error(message, ...) \
     if (LOG_LEVEL >= LOG_LEVEL_SUCCESS) { \
 		printf("\033[0;31m" message "\033[0m", ##__VA_ARGS__); \
@@ -282,6 +287,10 @@
 	}
 #define log_raw_debug(message, ...) \
 	if (LOG_LEVEL >= LOG_LEVEL_DEBUG) { \
+		printf("\033[0;37m" message "\033[0m", ##__VA_ARGS__); \
+	}
+#define log_raw_trace(message, ...) \
+	if (LOG_LEVEL >= LOG_LEVEL_TRACE) { \
 		printf("\033[0;37m" message "\033[0m", ##__VA_ARGS__); \
 	}
 

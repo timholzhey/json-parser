@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 typedef enum {
 	JSON_RETVAL_OK,
@@ -63,10 +64,15 @@ struct json_object_t {
 	struct json_object_t* parent;
 };
 
+#define json_parse_string(string, name) \
+	json_object_t name; \
+	json_ret_code_t name ## _return = json_parse(string, strlen(string), &(name));
+
 json_ret_code_t json_parse(const char* p_data, size_t size, json_object_t* p_object);
 
 json_value_t* json_object_get_value(const json_object_t* p_object, const char* key);
-bool json_object_has_key(const json_object_t* p_object, const char* key);
+json_value_type_t json_object_get_value_type(const json_object_t* p_object, const char* key);
 json_value_t* json_value_get_array_member(json_value_t* p_value, uint32_t index);
+bool json_object_has_key(const json_object_t* p_object, const char* key);
 
 #endif //JSON_PARSER_JSON_H

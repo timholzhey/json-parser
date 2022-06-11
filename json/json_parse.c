@@ -28,7 +28,7 @@ static struct {
 	json_parse_state_t state;
 	json_object_t *root;
 	json_object_t *current;
-	uint32_t nesting_level;
+	int32_t nesting_level;
 	bool is_array;
 } m_json_parse;
 
@@ -57,7 +57,7 @@ json_ret_code_t json_parse_object(json_token_t* tokens, uint32_t num_tokens, jso
 
 	while (tokens_consumed < num_tokens) {
 		json_ret_code_t ret = json_parse_object_token(&tokens[tokens_consumed]);
-		if (ret != JSON_RETVAL_OK && ret != JSON_RETVAL_BUSY) {
+		if (ret != JSON_RETVAL_BUSY) {
 			return ret;
 		}
 		tokens_consumed++;
@@ -105,6 +105,9 @@ static json_ret_code_t json_parse_object_token(json_token_t* p_token) {
 			printf("Unhandled state %d\n", m_json_parse.state);
 			return JSON_RETVAL_FAIL;
 	}
+	if (m_json_parse.state == JSON_PARSE_STATE_ERROR) {
+		return JSON_RETVAL_FAIL;
+	}
 	return JSON_RETVAL_BUSY;
 }
 
@@ -117,6 +120,10 @@ static json_ret_code_t json_parse_object_token(json_token_t* p_token) {
 
 static json_parse_state_t json_parse_state_init(json_token_t *p_token) {
 	if (p_token->type == JSON_TOKEN_TYPE_START_OBJECT) {
+		if (m_json_parse.nesting_level + 1 >= MAX_NESTING_LEVEL) {
+			JSON_PARSER_REPORT_ERROR("Maximum nesting level (%u) exceeded", MAX_NESTING_LEVEL);
+		}
+		m_json_parse.nesting_level++;
 		return JSON_PARSE_STATE_OBJECT_START;
 	}
 	JSON_PARSER_REPORT_ERROR("Expected object start, but got %s", json_get_token_name(p_token->type));
@@ -138,6 +145,10 @@ static json_parse_state_t json_parse_state_object_start(json_token_t *p_token) {
 		return JSON_PARSE_STATE_OBJECT_KEY;
 	}
 	if (p_token->type == JSON_TOKEN_TYPE_END_OBJECT) {
+		m_json_parse.nesting_level--;
+		if (m_json_parse.nesting_level <= 0) {
+			return JSON_PARSE_STATE_END;
+		}
 		return JSON_PARSE_STATE_OBJECT_END;
 	}
 	JSON_PARSER_REPORT_ERROR("Expected object key or object end, but got %s", json_get_token_name(p_token->type));
@@ -183,6 +194,9 @@ static json_parse_state_t json_parse_state_name_val_delim(json_token_t *p_token)
 			JSON_PARSE_HANDLE_MALLOC(m_json_parse.current->members[m_json_parse.current->num_members]->value.object = calloc(1, sizeof(json_object_t)));
 			m_json_parse.current->members[m_json_parse.current->num_members]->value.object->parent = m_json_parse.current;
 			m_json_parse.current = m_json_parse.current->members[m_json_parse.current->num_members]->value.object;
+			if (m_json_parse.nesting_level + 1 >= MAX_NESTING_LEVEL) {
+				JSON_PARSER_REPORT_ERROR("Maximum nesting level (%u) exceeded", MAX_NESTING_LEVEL);
+			}
 			m_json_parse.nesting_level++;
 			return JSON_PARSE_STATE_OBJECT_START;
 		default:
@@ -195,6 +209,10 @@ static json_parse_state_t json_parse_state_object_value(json_token_t *p_token) {
 		return JSON_PARSE_STATE_MEMBER_DELIM;
 	}
 	if (p_token->type == JSON_TOKEN_TYPE_END_OBJECT) {
+		m_json_parse.nesting_level--;
+		if (m_json_parse.nesting_level <= 0) {
+			return JSON_PARSE_STATE_END;
+		}
 		return JSON_PARSE_STATE_OBJECT_END;
 	}
 	JSON_PARSER_REPORT_ERROR("Expected member delimiter or object end, but got %s", json_get_token_name(p_token->type));
@@ -202,6 +220,11 @@ static json_parse_state_t json_parse_state_object_value(json_token_t *p_token) {
 
 static json_parse_state_t json_parse_state_member_delim(json_token_t *p_token) {
 	if (p_token->type == JSON_TOKEN_TYPE_VAL_STRING) {
+		JSON_PARSE_HANDLE_MALLOC(m_json_parse.current->members[m_json_parse.current->num_members] = calloc(1, sizeof(json_object_member_t)));
+		JSON_PARSE_HANDLE_MALLOC(m_json_parse.current->members[m_json_parse.current->num_members]->key = malloc(p_token->value.string.length + 1));
+		memcpy(m_json_parse.current->members[m_json_parse.current->num_members]->key, p_token->value.string.data, p_token->value.string.length);
+		m_json_parse.current->members[m_json_parse.current->num_members]->key[p_token->value.string.length] = '\0';
+
 		return JSON_PARSE_STATE_OBJECT_KEY;
 	}
 	if (p_token->type == JSON_TOKEN_TYPE_START_OBJECT) { // TODO: ?
@@ -257,21 +280,21 @@ static json_parse_state_t json_parse_state_object_value_array_delim(json_token_t
 }
 
 static json_parse_state_t json_parse_state_object_end(json_token_t *p_token) {
-	if (m_json_parse.nesting_level == 0) {
+	if (m_json_parse.nesting_level <= 0) {
 		return JSON_PARSE_STATE_END;
 	}
 	m_json_parse.current = m_json_parse.current->parent;
 	m_json_parse.current->num_members++;
 
-	if (m_json_parse.nesting_level == 1) {
-		m_json_parse.nesting_level--;
-		return JSON_PARSE_STATE_END;
-	}
-	m_json_parse.nesting_level--;
-
 	if (p_token->type == JSON_TOKEN_TYPE_MEMBER_DELIM) {
 		return JSON_PARSE_STATE_MEMBER_DELIM;
 	}
+
+	m_json_parse.nesting_level--;
+	if (m_json_parse.nesting_level <= 0) {
+		return JSON_PARSE_STATE_END;
+	}
+
 	if (p_token->type == JSON_TOKEN_TYPE_END_OBJECT) {
 		return JSON_PARSE_STATE_OBJECT_END;
 	}
