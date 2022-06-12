@@ -11,11 +11,15 @@ include_directories(
 )
 
 add_executable(
-        json_parser
-        main.c
-        json/json_lex.c
-        testlib/testlib.c
-        tests/test_json_lex.c
-        json/json_parse.c
-        json/json.c
-        tests/test_json_parse.c)
+    json_parser
+    testlib/testlib.c
+    main.c
+    json/json_lex.c
+    json/json_parse.c
+    json/json_stringify.c
+    json/json.c
+    tests/test_json_lex.c
+    tests/test_json_parse.c
+    tests/test_json_build.c
+    tests/test_json_stringify.c
+)

@@ -39,7 +39,7 @@
 #define JSON_TOKEN_STR_REPR_WHITESPACE_HORIZ_TAB		"\t"
 #define JSON_TOKEN_STR_REPR_WHITESPACE_CRLF				"\r\n"
 
-#define JSON_LEX_CHAR_BUFFER_SIZE	UINT16_MAX
+#define JSON_LEX_CHAR_BUFFER_SIZE	1000 * 1024
 
 typedef enum {
 	JSON_LEX_ERRCODE_OK,
@@ -438,7 +438,7 @@ char* json_lex_get_err_str(json_lex_errcode err) {
 
 static void json_lex_error_handler(const char* p_input, uint32_t input_len, json_ret_code_t ret) {
 	if (ret == JSON_RETVAL_ILLEGAL) {
-		printf("\033[1;31mSyntaxError\033[0m: %s \"%.*s\" at position %u:%u\n", json_lex_get_err_str(m_json_lex.err_code), m_json_lex.buffer_len + 1, m_json_lex.buffer, m_json_lex.line + 1, m_json_lex.column + 1);
+		printf("\033[31mSyntaxError: %s \"%.*s\" at %u:%u\033[0m\n", json_lex_get_err_str(m_json_lex.err_code), m_json_lex.buffer_len + 1, m_json_lex.buffer, m_json_lex.line + 1, m_json_lex.column + 1);
 		printf("%5u |     ", m_json_lex.line + 1);
 		for (uint16_t i = m_json_lex.line_start; i < input_len && p_input[i] != '\n' && p_input[i] != '\r'; i++) {
 			printf("%c", p_input[i]);
@@ -448,9 +448,9 @@ static void json_lex_error_handler(const char* p_input, uint32_t input_len, json
 		for (uint16_t i = 0; i < m_json_lex.column; i++) {
 			printf(" ");
 		}
-		printf("\033[1;31m^\033[0m\n");
+		printf("\033[31m^\033[0m\n");
 	} else {
-		printf("\033[1;31mInternal Error\033[0m\n");
+		printf("\033[31mInternal Error\033[0m\n");
 	}
 }
 

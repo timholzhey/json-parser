@@ -145,6 +145,66 @@ TEST_DEF(test_json_parse, parse_garbage_after_end) {
 	TEST_CLEAN_UP_AND_RETURN(0);
 }
 
+TEST_DEF(test_json_parse, parse_invalid_value_delim) {
+	const char *buffer = "{\"key\"::\"value\"}";
+	size_t buffer_size = strlen(buffer);
+	TEST_PRINT_BUFFER(buffer);
+
+	json_object_t object;
+	json_ret_code_t ret = json_parse(buffer, buffer_size, &object);
+	TEST_EXPECT_EQ_U8(ret, JSON_RETVAL_FAIL);
+
+	TEST_CLEAN_UP_AND_RETURN(0);
+}
+
+TEST_DEF(test_json_parse, parse_invalid_object_start) {
+	const char *buffer = ",{\"key\":\"value\"}";
+	size_t buffer_size = strlen(buffer);
+	TEST_PRINT_BUFFER(buffer);
+
+	json_object_t object;
+	json_ret_code_t ret = json_parse(buffer, buffer_size, &object);
+	TEST_EXPECT_EQ_U8(ret, JSON_RETVAL_FAIL);
+
+	TEST_CLEAN_UP_AND_RETURN(0);
+}
+
+TEST_DEF(test_json_parse, parse_invalid_object_nesting) {
+	const char *buffer = "{\"key\":\"value\"";
+	size_t buffer_size = strlen(buffer);
+	TEST_PRINT_BUFFER(buffer);
+
+	json_object_t object;
+	json_ret_code_t ret = json_parse(buffer, buffer_size, &object);
+	TEST_EXPECT_EQ_U8(ret, JSON_RETVAL_FAIL);
+
+	TEST_CLEAN_UP_AND_RETURN(0);
+}
+
+TEST_DEF(test_json_parse, parse_invalid_value) {
+	const char *buffer = "{\"key\":1 2 3}";
+	size_t buffer_size = strlen(buffer);
+	TEST_PRINT_BUFFER(buffer);
+
+	json_object_t object;
+	json_ret_code_t ret = json_parse(buffer, buffer_size, &object);
+	TEST_EXPECT_EQ_U8(ret, JSON_RETVAL_FAIL);
+
+	TEST_CLEAN_UP_AND_RETURN(0);
+}
+
+TEST_DEF(test_json_parse, parse_invalid_key) {
+	const char *buffer = "{1: \"value\"}";
+	size_t buffer_size = strlen(buffer);
+	TEST_PRINT_BUFFER(buffer);
+
+	json_object_t object;
+	json_ret_code_t ret = json_parse(buffer, buffer_size, &object);
+	TEST_EXPECT_EQ_U8(ret, JSON_RETVAL_FAIL);
+
+	TEST_CLEAN_UP_AND_RETURN(0);
+}
+
 TEST_DEF(test_json_parse, parse_multiple_keys) {
 	const char *buffer = "{\"key\":\"value\", \"key2\":\"value2\", \"key3\":\"value3\"}";
 	size_t buffer_size = strlen(buffer);
@@ -161,7 +221,9 @@ TEST_DEF(test_json_parse, parse_multiple_keys) {
 	TEST_EXPECT_EQ_STRING(val->string, "value2", strlen("value2"));
 	val = json_object_get_value(&object, "key3");
 	TEST_ASSERT_NOT_NULL(val);
-	TEST_EXPECT_EQ_STRING(val->string, "value3", strlen("value3"));
+	TEST_EXPECT_EQ_STRING(val->string, "value3", strlen("value3"))
+
+	TEST_EXPECT_EQ_U8(json_object_free(&object), JSON_RETVAL_OK);;
 
 	TEST_CLEAN_UP_AND_RETURN(0);
 }
@@ -174,6 +236,11 @@ int test_json_parse() {
 	TEST_REG(test_json_parse, parse_nested);
 	TEST_REG(test_json_parse, parse_double_nested);
 	TEST_REG(test_json_parse, parse_garbage_after_end);
+	TEST_REG(test_json_parse, parse_invalid_value_delim);
+	TEST_REG(test_json_parse, parse_invalid_object_start);
+	TEST_REG(test_json_parse, parse_invalid_object_nesting);
+	TEST_REG(test_json_parse, parse_invalid_value);
+	TEST_REG(test_json_parse, parse_invalid_key);
 	TEST_REG(test_json_parse, parse_multiple_keys);
 	TESTS_RUN();
 }

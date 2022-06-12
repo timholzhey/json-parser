@@ -7,6 +7,7 @@
 #include "json.h"
 #include "json_lex.h"
 #include "json_parse.h"
+#include "json_stringify.h"
 
 #define MAX_TOKEN_LENGTH		1000
 
@@ -27,6 +28,8 @@ json_ret_code_t json_parse(const char* p_data, size_t size, json_object_t* p_obj
 		free(tokens);
 		return parse_ret;
 	}
+
+	free(tokens);
 
 	return JSON_RETVAL_OK;
 }
@@ -83,4 +86,59 @@ bool json_object_has_key(const json_object_t* p_object, const char* key) {
 	}
 
 	return false;
+}
+
+json_ret_code_t json_object_add_value(json_object_t *p_object, const char* key, json_value_t value, json_value_type_t type) {
+	if (p_object == NULL) {
+		return JSON_RETVAL_INVALID_PARAM;
+	}
+
+	if (p_object->num_members >= JSON_NUM_MEMBERS) {
+		return JSON_RETVAL_FAIL;
+	}
+
+	p_object->members[p_object->num_members] = malloc(sizeof(json_object_member_t));
+	if (p_object->members[p_object->num_members] == NULL) {
+		return JSON_RETVAL_FAIL;
+	}
+
+	p_object->members[p_object->num_members]->key = malloc(strlen(key) + 1);
+	if (p_object->members[p_object->num_members]->key == NULL) {
+		return JSON_RETVAL_FAIL;
+	}
+
+	strcpy(p_object->members[p_object->num_members]->key, key);
+	p_object->members[p_object->num_members]->value = value;
+	p_object->members[p_object->num_members]->type = type;
+	p_object->num_members++;
+
+	return JSON_RETVAL_OK;
+}
+
+json_ret_code_t json_object_free(json_object_t* p_object) {
+	if (p_object == NULL) {
+		return JSON_RETVAL_INVALID_PARAM;
+	}
+
+	for (uint32_t i = 0; i < p_object->num_members; i++) {
+		free(p_object->members[i]->key);
+		if (p_object->members[i]->type == JSON_VALUE_TYPE_OBJECT) {
+			json_object_free(p_object->members[i]->value.object);
+		} else if (p_object->members[i]->type == JSON_VALUE_TYPE_ARRAY) {
+			free(p_object->members[i]->value.array);
+		} else if (p_object->members[i]->type == JSON_VALUE_TYPE_STRING) {
+			free(p_object->members[i]->value.string);
+		}
+		free(p_object->members[i]);
+	}
+
+	return JSON_RETVAL_OK;
+}
+
+char *json_stringify(const json_object_t* p_object) {
+	return json_object_stringify(p_object, false);
+}
+
+char *json_stringify_pretty(const json_object_t* p_object) {
+	return json_object_stringify(p_object, true);
 }

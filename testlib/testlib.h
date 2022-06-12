@@ -166,16 +166,17 @@
 		TEST_ERROR_WITH_MSG("Expected non-NULL pointer, got NULL"); \
 	}
 
-#define TEST_ASSERT_EQ_STRING(expect, actual, len) \
+#define TEST_ASSERT_EQ_STRING(actual, expect, len) \
 	for (int _i = 0; _i < len; _i++) { \
 		if ((expect)[_i] != (actual)[_i]) { \
 			TEST_FAIL_WITH_MSG("Expected \"%s\", got \"%s\" (%u/%u)", expect, actual, _i, (uint16_t) len); \
 		} \
 	}
-#define TEST_EXPECT_EQ_STRING(expect, actual, len) \
+#define TEST_EXPECT_EQ_STRING(actual, expect, len) \
 	for (int _i = 0; _i < len; _i++) { \
 		if ((expect)[_i] != (actual)[_i]) { \
 			TEST_ERROR_WITH_MSG("Expected \"%s\", got \"%s\" (%u/%u)", expect, actual, _i, (uint16_t) len); \
+        	break; \
 		} \
 	}
 

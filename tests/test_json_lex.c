@@ -51,17 +51,17 @@ TEST_DEF(test_json_lex, lex_invalid_value) {
 	json_ret_code_t ret = json_lex(buffer, buffer_size, tokens, &num_tokens, tokens_len);
 	TEST_EXPECT_EQ_U8(ret, JSON_RETVAL_ILLEGAL);
 
-	log_raw_debug("Tokens: ");
+	log_raw_trace("Tokens: ");
 	json_token_type_t expected_token_types[] = {JSON_TOKEN_TYPE_START_OBJECT, JSON_TOKEN_TYPE_VAL_STRING,
 												JSON_TOKEN_TYPE_NAME_VAL_DELIM};
 	for (uint32_t i = 0; i < num_tokens; i++) {
 		const int str_len = 255;
 		char str[str_len];
 		json_get_token_str_repr(&tokens[i], str, str_len);
-		log_debug("[%s] ", str);
+		log_trace("[%s] ", str);
 		TEST_ASSERT_EQ_U8(tokens[i].type, expected_token_types[i]);
 	}
-	log_raw_debug("\n");
+	log_raw_trace("\n");
 
 	// Free tokens
 	free(tokens);
@@ -82,17 +82,17 @@ TEST_DEF(test_json_lex, lex_invalid_unicode) {
 	json_ret_code_t ret = json_lex(buffer, buffer_size, tokens, &num_tokens, tokens_len);
 	TEST_EXPECT_EQ_U8(ret, JSON_RETVAL_ILLEGAL);
 
-	log_raw_debug("Tokens: ");
+	log_raw_trace("Tokens: ");
 	json_token_type_t expected_token_types[] = {JSON_TOKEN_TYPE_START_OBJECT, JSON_TOKEN_TYPE_VAL_STRING,
 												JSON_TOKEN_TYPE_NAME_VAL_DELIM};
 	for (uint32_t i = 0; i < num_tokens; i++) {
 		const int str_len = 255;
 		char str[str_len];
 		json_get_token_str_repr(&tokens[i], str, str_len);
-		log_debug("[%s] ", str);
+		log_trace("[%s] ", str);
 		TEST_ASSERT_EQ_U8(tokens[i].type, expected_token_types[i]);
 	}
-	log_raw_debug("\n");
+	log_raw_trace("\n");
 
 	// Free tokens
 	free(tokens);
@@ -113,17 +113,17 @@ TEST_DEF(test_json_lex, lex_invalid_number) {
 	json_ret_code_t ret = json_lex(buffer, buffer_size, tokens, &num_tokens, tokens_len);
 	TEST_EXPECT_EQ_U8(ret, JSON_RETVAL_ILLEGAL);
 
-	log_raw_debug("Tokens: ");
+	log_raw_trace("Tokens: ");
 	json_token_type_t expected_token_types[] = {JSON_TOKEN_TYPE_START_OBJECT, JSON_TOKEN_TYPE_VAL_STRING,
 												JSON_TOKEN_TYPE_NAME_VAL_DELIM};
 	for (uint32_t i = 0; i < num_tokens; i++) {
 		const int str_len = 255;
 		char str[str_len];
 		json_get_token_str_repr(&tokens[i], str, str_len);
-		log_raw_debug("[%s] ", str);
+		log_raw_trace("[%s] ", str);
 		TEST_ASSERT_EQ_U8(tokens[i].type, expected_token_types[i]);
 	}
-	log_raw_debug("\n");
+	log_raw_trace("\n");
 
 	// Free tokens
 	free(tokens);
@@ -144,7 +144,7 @@ TEST_DEF(test_json_lex, lex_string_escape) {
 	json_ret_code_t ret = json_lex(buffer, buffer_size, tokens, &num_tokens, tokens_len);
 	TEST_EXPECT_EQ_U8(ret, JSON_RETVAL_OK);
 
-	log_raw_debug("Tokens: ");
+	log_raw_trace("Tokens: ");
 	json_token_type_t expected_token_types[] = {JSON_TOKEN_TYPE_START_OBJECT, JSON_TOKEN_TYPE_VAL_STRING,
 												JSON_TOKEN_TYPE_NAME_VAL_DELIM, JSON_TOKEN_TYPE_VAL_STRING,
 												JSON_TOKEN_TYPE_END_OBJECT};
@@ -155,13 +155,13 @@ TEST_DEF(test_json_lex, lex_string_escape) {
 		const int str_len = 255;
 		char str[str_len];
 		json_get_token_str_repr(&tokens[i], str, str_len);
-		log_raw_debug("[%s] ", str);
+		log_raw_trace("[%s] ", str);
 		TEST_ASSERT_EQ_U8(tokens[i].type, expected_token_types[i]);
 		if (expected_strings[i] != NULL) {
-			TEST_ASSERT_EQ_STRING(expected_strings[i], tokens[i].value.string.data, strlen(expected_strings[i]));
+			TEST_ASSERT_EQ_STRING(tokens[i].value.string.data, expected_strings[i], strlen(expected_strings[i]));
 		}
 	}
-	log_raw_debug("\n");
+	log_raw_trace("\n");
 
 	// Free tokens
 	free(tokens);
@@ -194,12 +194,12 @@ TEST_DEF(test_json_str_unescape, json_str_unescape) {
 	char* actual_str = "stringWithTabEscape\\tSequences";
 	char* actual_str_unescaped = malloc(255);
 	TEST_EXPECT_EQ_U8(json_str_unescape(actual_str_unescaped, actual_str, strlen(actual_str)), JSON_RETVAL_OK);
-	TEST_ASSERT_EQ_STRING(expected_str, actual_str_unescaped, strlen(expected_str));
+	TEST_ASSERT_EQ_STRING(actual_str_unescaped, expected_str, strlen(expected_str));
 
 	expected_str = "stringWithQuotedEscape\"Sequences";
 	actual_str = "stringWithQuotedEscape\\\"Sequences";
 	TEST_EXPECT_EQ_U8(json_str_unescape(actual_str_unescaped, actual_str, strlen(actual_str)), JSON_RETVAL_OK);
-	TEST_ASSERT_EQ_STRING(expected_str, actual_str_unescaped, strlen(expected_str));
+	TEST_ASSERT_EQ_STRING(actual_str_unescaped, expected_str, strlen(expected_str));
 
 	actual_str = "stringWithIllegalEscape\\Sequences";
 	TEST_EXPECT_EQ_U8(json_str_unescape(actual_str_unescaped, actual_str, strlen(actual_str)), JSON_RETVAL_ILLEGAL);
@@ -210,7 +210,7 @@ TEST_DEF(test_json_str_unescape, json_str_unescape) {
 	expected_str = "stringWithNewLineEscape\nSequences";
 	actual_str = "stringWithNewLineEscape\\nSequences";
 	TEST_EXPECT_EQ_U8(json_str_unescape(actual_str_unescaped, actual_str, strlen(actual_str)), JSON_RETVAL_OK);
-	TEST_ASSERT_EQ_STRING(expected_str, actual_str_unescaped, strlen(expected_str));
+	TEST_ASSERT_EQ_STRING(actual_str_unescaped, expected_str, strlen(expected_str));
 
 	TEST_CLEAN_UP_AND_RETURN(0);
 }

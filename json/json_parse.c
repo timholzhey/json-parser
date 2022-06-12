@@ -63,6 +63,11 @@ json_ret_code_t json_parse_object(json_token_t* tokens, uint32_t num_tokens, jso
 		tokens_consumed++;
 	}
 
+	if (m_json_parse.nesting_level != 0) {
+		printf("\033[31mFailed to parse object: Unclosed object\033[0m\n");
+		return JSON_RETVAL_FAIL;
+	}
+
 	return JSON_RETVAL_OK;
 }
 
@@ -114,7 +119,7 @@ static json_ret_code_t json_parse_object_token(json_token_t* p_token) {
 #define JSON_PARSER_REPORT_ERROR(msg, ...) { \
 	printf("\033[31mFailed to parse object: "); \
 	printf(msg, ##__VA_ARGS__);                 \
-	printf("\033[0m\n");						\
+	printf(" at %u:%u\033[0m\n", p_token->line, p_token->column); \
 	return JSON_PARSE_STATE_ERROR;              \
 }
 
@@ -302,5 +307,5 @@ static json_parse_state_t json_parse_state_object_end(json_token_t *p_token) {
 }
 
 static json_parse_state_t json_parse_state_end(json_token_t *p_token) {
-	JSON_PARSER_REPORT_ERROR("Unexpected token %s after end of object", json_get_token_name(p_token->type));
+	JSON_PARSER_REPORT_ERROR("Unexpected token `%s` after end of object", json_get_token_name(p_token->type));
 }
