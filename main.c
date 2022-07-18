@@ -6,7 +6,7 @@
 #include "json.h"
 #include <stdio.h>
 
-#define RUN_TESTS	1
+#define RUN_TESTS	0
 
 int main() {
 #if defined RUN_TESTS && RUN_TESTS == 1
@@ -15,10 +15,8 @@ int main() {
 	test_json_build();
 	test_json_stringify();
 #else
-	const char *str = "{\"key\":\"value\"}";
-	json_parse_string(str, obj);
+	json_parse_string("{\"key\":\"value\"}", obj);
 
-	printf("Parsing input: %s\n\n", str);
 	printf("Parser returned: %d\n", obj_return);
 	printf("Has key 'key': %d\n", json_object_has_key(&obj, "key"));
 	printf("Value is: %s\n", json_object_get_value(&obj, "key")->string);
